@@ -66,7 +66,7 @@ int serve_m_next(void *_ctx)
 	return ctx->hex[0];
 }
 
-int serve_m(FILE *session, uint8_t *pkt)
+int serve_m(struct gdb_session *session, uint8_t *pkt)
 {
 	struct serve_m_ctx ctx = {};
 	unsigned long long addr;
@@ -111,7 +111,7 @@ int serve_g_next(void *_left)
 	return EOF;
 }
 
-int serve_g(FILE *session)
+int serve_g(struct gdb_session *session)
 {
 	/* Two ASCII hex digits per byte */
 	size_t left = gsize * 2;
@@ -119,7 +119,7 @@ int serve_g(FILE *session)
 	return gdb_send_iter(session, serve_g_next, &left);
 }
 
-void serve(FILE *session)
+void serve(struct gdb_session *session)
 {
 	uint8_t pkt[0x100];
 	int len, err = 0;
@@ -150,17 +150,17 @@ void serve(FILE *session)
 
 int serve_file(const char *path)
 {
-	FILE *session;
+	struct gdb_session session;
 
-	session = fopen(path, "a+");
-	if (!session) {
+	session.rx = session.tx = fopen(path, "a+");
+	if (!session.rx) {
 		fprintf(stderr, "Unable to open \"%s\": %m\n", path);
 		return 1;
 	}
 
 	fprintf(stderr, "Opened %s\n", path);
-	serve(session);
-	fclose(session);
+	serve(&session);
+	fclose(session.rx);
 	return 0;
 }
 
@@ -262,8 +262,8 @@ int bind_inet(const char *addr)
 
 int serve_sock(const char *addr)
 {
+	struct gdb_session session;
 	int err, sk, fd;
-	FILE *session;
 
 	if (strchr(addr, ':'))
 		sk = bind_inet(addr);
@@ -288,15 +288,18 @@ int serve_sock(const char *addr)
 			break;
 		}
 
-		session = fdopen(fd, "a+");
-		if (!session) {
+		session.rx = fdopen(dup(fd), "r");
+		session.tx = fdopen(dup(fd), "w");
+		if (!session.rx || !session.tx) {
 			perror("fdopen");
 			break;
 		}
 
-		serve(session);
+		serve(&session);
 
-		fclose(session);
+		fclose(session.tx);
+		fclose(session.rx);
+		close(fd);
 	}
 
 	return 0;
