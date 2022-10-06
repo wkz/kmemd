@@ -23,17 +23,30 @@
 #include "gdb.h"
 #include "kmem.h"
 
-/* Is it just me or does GDB go out of its way to make it impossible
- * to determine how long the expected response to a 'g' packet should
- * be?
- *
- * Until there's a better way, maintain a list for the platforms we
- * know about, and require everyone else to supply the -g option.
+/*
+ * Maintain a list of the response length to a 'g' packet expected by
+ * GDB, for the architectures we know about. These are mostly scraped
+ * from arch/$ARCH/include/asm/kgdb.h in the kernel. On other systems,
+ * the user can supply the information manually using the -g option.
  */
 #if defined(__x86_64__)
 size_t gsize = 560;
 #elif defined(__i386__)
 size_t gsize = 312;
+#elif defined(__aarch64__)
+size_t gsize = 788;
+#elif defined(__arm__)
+size_t gsize = 168;
+#elif defined(__ppc64__)
+size_t gsize = 556;
+#elif defined(__ppc__) && (defined(__ppce500__) || defined(__ppce500v2__))
+size_t gsize = 456;
+#elif defined(__ppc__)
+size_t gsize = 292;
+#elif defined(__riscv64__)
+size_t gsize = 288;
+#elif defined(__riscv32__)
+size_t gsize = 144;
 #else
 size_t gsize = 0;
 #endif
