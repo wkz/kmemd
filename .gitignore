@@ -2,6 +2,7 @@
 *.o
 *.d
 /src/kmemd
+/kmemd-*.tar*
 
 # autoconf/automake generated files
 .deps
