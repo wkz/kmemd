@@ -24,10 +24,16 @@
 #include "kmem.h"
 
 /*
- * Maintain a list of the response length to a 'g' packet expected by
- * GDB, for the architectures we know about. These are mostly scraped
- * from arch/$ARCH/include/asm/kgdb.h in the kernel. On other systems,
- * the user can supply the information manually using the -g option.
+ * To lie convincingly enough to GDB that it is, in fact, talking to a
+ * real debug stub, we have to respond to the 'g' packet with our
+ * current register state. We fill these with all zeroes, but the
+ * length must still match what GDB expects, based on the architecture
+ * we're running on.
+ *
+ * The following is a list of the expected lengths for some common
+ * platforms, mostly scraped from arch/$ARCH/include/asm/kgdb.h in the
+ * kernel and by trail-and-error. On other systems, the user can
+ * supply the information manually using the -g option.
  */
 #if defined(__x86_64__)
 size_t gsize = 560;
@@ -37,16 +43,14 @@ size_t gsize = 312;
 size_t gsize = 788;
 #elif defined(__arm__)
 size_t gsize = 168;
-#elif defined(__ppc64__)
-size_t gsize = 556;
-#elif defined(__ppc__) && (defined(__ppce500__) || defined(__ppce500v2__))
-size_t gsize = 456;
-#elif defined(__ppc__)
-size_t gsize = 292;
-#elif defined(__riscv64__)
-size_t gsize = 288;
-#elif defined(__riscv32__)
-size_t gsize = 144;
+#elif defined(__powerpc64__)
+size_t gsize = 1076;
+#elif defined(__powerpc__)
+size_t gsize = 932;
+#elif defined(__riscv_xlen) && __riscv_xlen == 64
+size_t gsize = 264;
+#elif defined(__riscv_xlen) && __riscv_xlen == 32
+size_t gsize = 132;
 #else
 size_t gsize = 0;
 #endif
